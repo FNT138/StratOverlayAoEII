@@ -16,6 +16,8 @@ class ControlsWidget(QWidget):
     
     build_order_selected = pyqtSignal(str)  # Emits filepath when build order is selected
     next_step_clicked = pyqtSignal()
+    start_detection_clicked = pyqtSignal()  # Start game state detection
+    stop_detection_clicked = pyqtSignal()   # Stop game state detection
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -68,11 +70,11 @@ class ControlsWidget(QWidget):
         # Control buttons
         buttons_layout = QHBoxLayout()
         
-        # Next step button (for testing/manual progression)
-        self.next_step_btn = QPushButton("Next Step →")
-        self.next_step_btn.setFont(QFont("Segoe UI", 9))
-        self.next_step_btn.clicked.connect(self.next_step_clicked.emit)
-        self.next_step_btn.setStyleSheet("""
+        # Start Detection button
+        self.start_detection_btn = QPushButton("▶ Start Detection")
+        self.start_detection_btn.setFont(QFont("Segoe UI", 9))
+        self.start_detection_btn.clicked.connect(self.on_start_detection)
+        self.start_detection_btn.setStyleSheet("""
             QPushButton {
                 background-color: rgba(76, 175, 80, 0.8);
                 color: #ffffff;
@@ -86,6 +88,49 @@ class ControlsWidget(QWidget):
             }
             QPushButton:pressed {
                 background-color: rgba(56, 142, 60, 1.0);
+            }
+        """)
+        
+        # Stop Detection button (initially hidden)
+        self.stop_detection_btn = QPushButton("⏹ Stop")
+        self.stop_detection_btn.setFont(QFont("Segoe UI", 9))
+        self.stop_detection_btn.clicked.connect(self.on_stop_detection)
+        self.stop_detection_btn.setVisible(False)
+        self.stop_detection_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(244, 67, 54, 0.8);
+                color: #ffffff;
+                border: none;
+                border-radius: 5px;
+                padding: 8px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: rgba(244, 67, 54, 1.0);
+            }
+            QPushButton:pressed {
+                background-color: rgba(211, 47, 47, 1.0);
+            }
+        """)
+        
+        # Next step button (for testing/manual progression)
+        self.next_step_btn = QPushButton("Next Step →")
+        self.next_step_btn.setFont(QFont("Segoe UI", 9))
+        self.next_step_btn.clicked.connect(self.next_step_clicked.emit)
+        self.next_step_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(33, 150, 243, 0.8);
+                color: #ffffff;
+                border: none;
+                border-radius: 5px;
+                padding: 8px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: rgba(33, 150, 243, 1.0);
+            }
+            QPushButton:pressed {
+                background-color: rgba(25, 118, 210, 1.0);
             }
         """)
         
@@ -107,6 +152,8 @@ class ControlsWidget(QWidget):
             }
         """)
         
+        buttons_layout.addWidget(self.start_detection_btn, stretch=1)
+        buttons_layout.addWidget(self.stop_detection_btn, stretch=1)
         buttons_layout.addWidget(self.next_step_btn, stretch=1)
         buttons_layout.addWidget(self.reload_btn)
         
@@ -158,3 +205,17 @@ class ControlsWidget(QWidget):
         filepath = self.build_order_combo.currentData()
         if filepath:
             self.build_order_selected.emit(filepath)
+    
+    def on_start_detection(self):
+        """Handle start detection button click"""
+        self.start_detection_btn.setVisible(False)
+        self.stop_detection_btn.setVisible(True)
+        self.start_detection_clicked.emit()
+        self.info_label.setText("Detection running...")
+    
+    def on_stop_detection(self):
+        """Handle stop detection button click"""
+        self.start_detection_btn.setVisible(True)
+        self.stop_detection_btn.setVisible(False)
+        self.stop_detection_clicked.emit()
+        self.info_label.setText("Detection stopped")

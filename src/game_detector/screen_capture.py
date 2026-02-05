@@ -18,13 +18,18 @@ class ScreenCapture:
         Args:
             fps_limit: Maximum captures per second (default 5 for performance)
         """
-        self.mss = mss.mss()
+        self.mss = None  # Will be initialized on first use (thread-safe)
         self.fps_limit = fps_limit
         self.min_frame_time = 1.0 / fps_limit
         self.last_capture_time = 0
         
         # Cache for game window position
         self.game_window_region: Optional[dict] = None
+    
+    def _ensure_mss(self):
+        """Ensure mss is initialized (thread-safe lazy initialization)"""
+        if self.mss is None:
+            self.mss = mss.mss()
     
     def capture_region(self, x: int, y: int, width: int, height: int) -> np.ndarray:
         """
@@ -39,6 +44,9 @@ class ScreenCapture:
         Returns:
             numpy array with BGR image data
         """
+        # Ensure mss is initialized (thread-safe)
+        self._ensure_mss()
+        
         # FPS limiting
         current_time = time.time()
         time_since_last = current_time - self.last_capture_time
@@ -76,6 +84,7 @@ class ScreenCapture:
         Returns:
             numpy array with BGR image data
         """
+        self._ensure_mss()
         monitor = self.mss.monitors[1]  # Primary monitor
         return self.capture_region(
             monitor["left"],
@@ -94,6 +103,7 @@ class ScreenCapture:
         Returns:
             numpy array with BGR image data
         """
+        self._ensure_mss()
         monitor = self.mss.monitors[1]
         return self.capture_region(
             monitor["left"],
@@ -109,6 +119,7 @@ class ScreenCapture:
         Returns:
             Tuple of (width, height)
         """
+        self._ensure_mss()
         monitor = self.mss.monitors[1]
         return (monitor["width"], monitor["height"])
     
