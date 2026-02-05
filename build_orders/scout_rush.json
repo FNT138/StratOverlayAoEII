@@ -1,0 +1,135 @@
+{
+  "name": "Scout Rush - Feudal Age",
+  "description": "Build order estándar para rush de scouts en edad feudal. Versátil para la mayoría de civilizaciones.",
+  "civilization": "any",
+  "author": "Community Standard",
+  "target_age": "Feudal",
+  "max_villagers": 21,
+  "strategy": "Scout Rush",
+  "steps": [
+    {
+      "villager_count": 1,
+      "action": "assign_resource",
+      "resource": "sheep",
+      "count": 3,
+      "description": "3 aldeanos a ovejas"
+    },
+    {
+      "villager_count": 4,
+      "action": "build",
+      "building": "House",
+      "description": "Construir casa",
+      "important": true
+    },
+    {
+      "villager_count": 4,
+      "action": "assign_resource",
+      "resource": "sheep",
+      "count": 2,
+      "description": "2 aldeanos más a ovejas"
+    },
+    {
+      "villager_count": 6,
+      "action": "build",
+      "building": "Lumber Camp",
+      "description": "Construir campamento maderero",
+      "important": true
+    },
+    {
+      "villager_count": 6,
+      "action": "assign_resource",
+      "resource": "wood",
+      "count": 3,
+      "description": "3 aldeanos a madera"
+    },
+    {
+      "villager_count": 9,
+      "action": "lure_boar",
+      "description": "Atraer primer jabalí",
+      "notes": "Usar un aldeano de ovejas",
+      "important": true
+    },
+    {
+      "villager_count": 10,
+      "action": "assign_resource",
+      "resource": "boar",
+      "count": 4,
+      "description": "4 aldeanos al jabalí"
+    },
+    {
+      "villager_count": 11,
+      "action": "build",
+      "building": "House",
+      "description": "Construir casa"
+    },
+    {
+      "villager_count": 11,
+      "action": "assign_resource",
+      "resource": "berries",
+      "count": 4,
+      "description": "4 aldeanos a bayas (construir molino)",
+      "notes": "Construir Mill cerca de bayas"
+    },
+    {
+      "villager_count": 15,
+      "action": "lure_boar",
+      "description": "Atraer segundo jabalí",
+      "important": true
+    },
+    {
+      "villager_count": 16,
+      "action": "assign_resource",
+      "resource": "wood",
+      "count": 2,
+      "description": "2 aldeanos más a madera"
+    },
+    {
+      "villager_count": 18,
+      "action": "build",
+      "building": "House",
+      "description": "Construir casa"
+    },
+    {
+      "villager_count": 19,
+      "action": "assign_resource",
+      "resource": "food",
+      "count": 2,
+      "description": "2 aldeanos a comida (ovejas restantes)"
+    },
+    {
+      "villager_count": 21,
+      "action": "advance_age",
+      "description": "SUBIR A FEUDAL",
+      "notes": "6 en madera, 10 en comida, 5 construyendo/idle",
+      "important": true
+    },
+    {
+      "villager_count": 21,
+      "action": "build",
+      "building": "Barracks",
+      "description": "Durante subida: construir cuartel",
+      "notes": "Mientras subes de edad"
+    },
+    {
+      "villager_count": 22,
+      "action": "assign_resource",
+      "resource": "wood",
+      "count": 2,
+      "description": "2 aldeanos más a madera (total 8)"
+    },
+    {
+      "villager_count": 24,
+      "action": "build",
+      "building": "Stable",
+      "description": "AL LLEGAR FEUDAL: Stable + Blacksmith",
+      "important": true
+    },
+    {
+      "villager_count": 24,
+      "action": "train",
+      "unit": "Scout",
+      "count": 3,
+      "description": "Producir 3-4 scouts continuamente"
+    }
+  ]
+}

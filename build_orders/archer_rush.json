@@ -1,0 +1,139 @@
+{
+    "name": "Archer Rush - Feudal Age",
+    "description": "Build order para rush de arqueros. Efectivo contra infantería y scouts.",
+    "civilization": "any",
+    "author": "Community Standard",
+    "target_age": "Feudal",
+    "max_villagers": 23,
+    "strategy": "Archer Rush",
+    "steps": [
+        {
+            "villager_count": 1,
+            "action": "assign_resource",
+            "resource": "sheep",
+            "count": 3,
+            "description": "3 aldeanos a ovejas"
+        },
+        {
+            "villager_count": 4,
+            "action": "build",
+            "building": "House",
+            "description": "Construir casa",
+            "important": true
+        },
+        {
+            "villager_count": 4,
+            "action": "assign_resource",
+            "resource": "sheep",
+            "count": 2,
+            "description": "2 aldeanos más a ovejas"
+        },
+        {
+            "villager_count": 6,
+            "action": "build",
+            "building": "Lumber Camp",
+            "description": "Construir campamento maderero",
+            "important": true
+        },
+        {
+            "villager_count": 6,
+            "action": "assign_resource",
+            "resource": "wood",
+            "count": 4,
+            "description": "4 aldeanos a madera"
+        },
+        {
+            "villager_count": 10,
+            "action": "lure_boar",
+            "description": "Atraer primer jabalí",
+            "important": true
+        },
+        {
+            "villager_count": 11,
+            "action": "assign_resource",
+            "resource": "boar",
+            "count": 4,
+            "description": "4 aldeanos al jabalí"
+        },
+        {
+            "villager_count": 11,
+            "action": "build",
+            "building": "House",
+            "description": "Construir casa"
+        },
+        {
+            "villager_count": 12,
+            "action": "assign_resource",
+            "resource": "berries",
+            "count": 4,
+            "description": "4 aldeanos a bayas (construir molino)"
+        },
+        {
+            "villager_count": 16,
+            "action": "lure_boar",
+            "description": "Atraer segundo jabalí",
+            "important": true
+        },
+        {
+            "villager_count": 17,
+            "action": "assign_resource",
+            "resource": "wood",
+            "count": 1,
+            "description": "1 aldeano más a madera (total 5)"
+        },
+        {
+            "villager_count": 18,
+            "action": "build",
+            "building": "House",
+            "description": "Construir casa"
+        },
+        {
+            "villager_count": 19,
+            "action": "assign_resource",
+            "resource": "food",
+            "count": 4,
+            "description": "4 aldeanos a comida restante"
+        },
+        {
+            "villager_count": 23,
+            "action": "advance_age",
+            "description": "SUBIR A FEUDAL",
+            "notes": "5 en madera, 14 en comida, 4 construyendo",
+            "important": true
+        },
+        {
+            "villager_count": 23,
+            "action": "build",
+            "building": "Barracks",
+            "description": "Durante subida: construir cuartel"
+        },
+        {
+            "villager_count": 24,
+            "action": "assign_resource",
+            "resource": "gold",
+            "count": 2,
+            "description": "2 aldeanos a oro (construir mining camp)"
+        },
+        {
+            "villager_count": 26,
+            "action": "assign_resource",
+            "resource": "wood",
+            "count": 3,
+            "description": "3 aldeanos más a madera (total 8)"
+        },
+        {
+            "villager_count": 27,
+            "action": "build",
+            "building": "Archery Range",
+            "count": 2,
+            "description": "AL LLEGAR FEUDAL: 2 Archery Ranges",
+            "important": true
+        },
+        {
+            "villager_count": 27,
+            "action": "train",
+            "unit": "Archer",
+            "description": "Producir arqueros continuamente de ambos rangos"
+        }
+    ]
+}
