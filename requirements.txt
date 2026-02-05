@@ -1,0 +1,17 @@
+# Core UI Framework
+PyQt6>=6.6.0
+
+# Screen capture and image processing (lightweight)
+mss>=9.0.0
+Pillow>=10.0.0
+numpy>=1.26.0
+
+# Configuration
+PyYAML>=6.0
+
+# Future: Automation (commented for MVP)
+# pyautogui>=0.9.54
+# pynput>=1.7.6
+
+# Future: OCR if needed (commented for MVP)
+# pytesseract>=0.3.10
