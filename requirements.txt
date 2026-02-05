@@ -1,17 +1,18 @@
 # Core UI Framework
 PyQt6>=6.6.0
 
-# Screen capture and image processing (lightweight)
+# Screen capture and image processing
 mss>=9.0.0
-Pillow>=10.0.0
 numpy>=1.26.0
+opencv-python-headless>=4.8.0  # Lightweight OpenCV for template matching
+Pillow>=10.0.0
 
 # Configuration
 PyYAML>=6.0
 
-# Future: Automation (commented for MVP)
+# Phase 2: Automation (will enable when needed)
 # pyautogui>=0.9.54
 # pynput>=1.7.6
 
-# Future: OCR if needed (commented for MVP)
+# Future: OCR if needed (commented for now)
 # pytesseract>=0.3.10
