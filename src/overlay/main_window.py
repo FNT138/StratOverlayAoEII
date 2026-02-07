@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QKeySequence, QShortcut
 from typing import Optional
 
-from ..build_order import BuildOrder
+from ..build_order import BuildOrder, BuildOrderExecutor
 from ..game_detector import StateReader, GameState
 
 
@@ -22,6 +22,9 @@ class OverlayWindow(QMainWindow):
         
         # Initialize state reader
         self.state_reader = StateReader(fps=5)
+        
+        # Initialize build order executor
+        self.executor = BuildOrderExecutor()
         
         self.init_ui()
         self.setup_hotkeys()
@@ -98,7 +101,11 @@ class OverlayWindow(QMainWindow):
     def on_state_updated(self, state: GameState):
         """Handle state update from state reader"""
         self.game_state_widget.update_state(state)
-        # TODO: Auto-advance build order based on state
+        
+        # Auto-avance del build order basado en villagers
+        if self.executor.update(state):
+            # Se avanzo al siguiente paso
+            self.build_order_display.update_display()
     
     def on_detection_error(self, error_msg: str):
         """Handle detection error"""
@@ -123,6 +130,9 @@ class OverlayWindow(QMainWindow):
         self.build_order = build_order
         self.build_order_display.set_build_order(build_order)
         self.header.update_title(build_order.name)
+        
+        # Cargar en el executor
+        self.executor.set_build_order(build_order)
     
     def mousePressEvent(self, event):
         """Handle mouse press for dragging"""
