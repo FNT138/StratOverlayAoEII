@@ -1,0 +1,41 @@
+{
+    "resolution": "1920x1080",
+    "ui_positions": {
+        "villager_count": {
+            "x": 420,
+            "y": 22,
+            "width": 26,
+            "height": 26
+        },
+        "population": {
+            "x": 448,
+            "y": 10,
+            "width": 72,
+            "height": 30
+        },
+        "food": {
+            "x": 144,
+            "y": 14,
+            "width": 62,
+            "height": 26
+        },
+        "wood": {
+            "x": 43,
+            "y": 14,
+            "width": 62,
+            "height": 26
+        },
+        "gold": {
+            "x": 242,
+            "y": 12,
+            "width": 62,
+            "height": 31
+        },
+        "stone": {
+            "x": 345,
+            "y": 14,
+            "width": 65,
+            "height": 29
+        }
+    }
+}

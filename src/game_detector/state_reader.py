@@ -1,45 +1,65 @@
 """
-State reader - main interface for reading game state
+Lector de estado del juego - Interfaz principal para leer estado de AoE II.
+
+Este módulo orquesta la captura de pantalla y el reconocimiento de dígitos
+para extraer el estado actual del juego (villagers, recursos, población).
+
+El lector corre en un thread separado para no bloquear la UI del overlay.
 """
-from typing import Optional, Callable
+import json
+from typing import Optional
 import threading
 import time
+from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from .game_state import GameState
 from .screen_capture import ScreenCapture
-from .template_matcher import TemplateMatcher
+from .digit_recognizer import DigitRecognizer
 
 
 class StateReader(QObject):
     """
-    Main class for reading game state from screen captures
-    Runs in a separate thread to avoid blocking the UI
+    Clase principal para leer el estado del juego desde capturas de pantalla.
+    
+    Ejecuta en un thread separado para no bloquear la UI.
+    Emite señales Qt cuando hay actualizaciones o errores.
+    
+    Uso típico:
+        reader = StateReader(fps=5)
+        reader.load_calibration(calibration_data)
+        reader.state_updated.connect(mi_callback)
+        reader.start()
     """
     
-    # Signals for Qt integration
-    state_updated = pyqtSignal(GameState)
-    detection_error = pyqtSignal(str)
+    # Señales Qt para comunicación con la UI
+    state_updated = pyqtSignal(GameState)  # Emitida cuando hay nuevo estado
+    detection_error = pyqtSignal(str)       # Emitida cuando hay error
     
     def __init__(self, fps: int = 5):
         """
-        Initialize state reader
+        Inicializa el lector de estado.
         
         Args:
-            fps: How many times per second to update state
+            fps: Frecuencia de actualización (capturas por segundo)
         """
         super().__init__()
         
+        # Componentes de captura y reconocimiento
         self.capture = ScreenCapture(fps_limit=fps)
-        self.matcher = TemplateMatcher(confidence_threshold=0.7)
+        self.digit_recognizer: Optional[DigitRecognizer] = None
         
+        # Estado actual y anterior (para fallback)
         self.current_state = GameState()
+        self.previous_state = GameState()
+        
+        # Control del thread
         self.is_running = False
         self.update_thread: Optional[threading.Thread] = None
         
-        # Calibration data (UI positions)
+        # Datos de calibración (posiciones de UI)
         self.calibration = {
-            'villager_count': None,  # (x, y, width, height)
+            'villager_count': None,  # {"x": int, "y": int, "width": int, "height": int}
             'population': None,
             'food': None,
             'wood': None,
@@ -48,96 +68,208 @@ class StateReader(QObject):
         }
         
         self.is_calibrated = False
+        
+        # Intentar cargar calibración desde archivo
+        self._cargar_calibracion_default()
+        
+        # Intentar inicializar reconocedor de dígitos
+        self._inicializar_reconocedor()
+    
+    def _cargar_calibracion_default(self):
+        """
+        Intenta cargar calibración desde config/calibration.json
+        """
+        ruta_config = Path(__file__).parent.parent.parent / "config" / "calibration.json"
+        
+        if ruta_config.exists():
+            try:
+                with open(ruta_config, 'r') as f:
+                    data = json.load(f)
+                
+                if "ui_positions" in data:
+                    self.calibration = data["ui_positions"]
+                    self.is_calibrated = True
+                    print(f"[StateReader] Calibración cargada desde {ruta_config}")
+            except Exception as e:
+                print(f"[StateReader] Error cargando calibración: {e}")
+    
+    def _inicializar_reconocedor(self):
+        """
+        Inicializa el reconocedor de dígitos con templates del proyecto.
+        """
+        ruta_templates = Path(__file__).parent.parent.parent / "assets" / "digit_templates"
+        
+        if ruta_templates.exists():
+            self.digit_recognizer = DigitRecognizer(str(ruta_templates))
+            print("[StateReader] Reconocedor de dígitos inicializado")
+        else:
+            print(f"[StateReader] AVISO: No se encontró {ruta_templates}")
+            print("[StateReader] Ejecutar tools/capturar_templates.py para crear templates")
     
     def load_calibration(self, calibration_data: dict):
         """
-        Load calibration data for UI positions
+        Carga datos de calibración para posiciones de UI.
         
         Args:
-            calibration_data: Dictionary with UI element positions
+            calibration_data: Diccionario con posiciones de elementos UI
+                Formato: {"villager_count": {"x": 420, "y": 22, "width": 26, "height": 26}, ...}
         """
         self.calibration = calibration_data
         self.is_calibrated = True
     
     def start(self):
-        """Start the state reading loop in a background thread"""
+        """
+        Inicia el loop de lectura en un thread en segundo plano.
+        """
         if self.is_running:
             return
         
         if not self.is_calibrated:
-            self.detection_error.emit("Not calibrated! Please run calibration first.")
+            self.detection_error.emit("No calibrado. Ejecutar calibración primero.")
+            return
+        
+        if self.digit_recognizer is None:
+            self.detection_error.emit("Sin templates. Ejecutar tools/capturar_templates.py")
             return
         
         self.is_running = True
         self.update_thread = threading.Thread(target=self._update_loop, daemon=True)
         self.update_thread.start()
+        print("[StateReader] Iniciado")
     
     def stop(self):
-        """Stop the state reading loop"""
+        """
+        Detiene el loop de lectura.
+        """
         self.is_running = False
         if self.update_thread:
             self.update_thread.join(timeout=2.0)
         
-        # Reset screen capture to allow restart in new thread
+        # Limpiar recursos de captura (mss no es thread-safe)
         if self.capture.mss is not None:
             try:
                 self.capture.mss.close()
             except:
-                pass  # Ignore errors during cleanup
+                pass
             self.capture.mss = None
+        
+        print("[StateReader] Detenido")
     
     def _update_loop(self):
-        """Main loop that runs in background thread"""
+        """
+        Loop principal que corre en thread separado.
+        Captura pantalla y actualiza estado periódicamente.
+        """
         while self.is_running:
             try:
                 self._update_state()
-                time.sleep(0.2)  # 5 Hz update rate
+                time.sleep(0.2)  # ~5 Hz
             except Exception as e:
-                self.detection_error.emit(f"Error reading state: {str(e)}")
-                time.sleep(1.0)  # Back off on error
+                self.detection_error.emit(f"Error: {str(e)}")
+                time.sleep(1.0)  # Back-off en error
+    
+    def _extraer_region(self, screenshot, nombre_region: str):
+        """
+        Extrae una región de la captura según calibración.
+        
+        Args:
+            screenshot: Imagen completa capturada
+            nombre_region: Nombre de la región ("villager_count", "food", etc.)
+            
+        Returns:
+            Recorte de la región o None si no hay calibración
+        """
+        config = self.calibration.get(nombre_region)
+        if config is None:
+            return None
+        
+        x = config.get("x", 0)
+        y = config.get("y", 0)
+        w = config.get("width", 50)
+        h = config.get("height", 30)
+        
+        # Extraer región
+        return screenshot[y:y+h, x:x+w].copy()
     
     def _update_state(self):
         """
-        Update the game state from screen capture
-        This is where the actual detection happens
+        Captura pantalla y actualiza el estado del juego.
+        
+        Lee cada región de UI, reconoce los números, y actualiza GameState.
+        Si el reconocimiento falla, mantiene el valor anterior (fallback).
         """
-        # Capture the UI area (top of screen)
+        # Capturar barra superior de la pantalla
         screenshot = self.capture.capture_top_bar(height=150)
         
-        # Create new state
+        # Guardar estado anterior para fallback
+        self.previous_state = self.current_state
+        
+        # Crear nuevo estado
         new_state = GameState()
         
-        # TODO: Implement actual detection
-        # For now, just marking state as updated
+        # --- Leer contador de villagers (color cyan) ---
+        villager_region = self._extraer_region(screenshot, 'villager_count')
+        if villager_region is not None and self.digit_recognizer:
+            valor = self.digit_recognizer.reconocer_numero(villager_region, color="cyan")
+            if valor is not None and 0 < valor < 200:  # Validación de rango
+                new_state.villager_count = valor
+            else:
+                # Fallback: mantener valor anterior
+                new_state.villager_count = self.previous_state.villager_count
         
-        # Example of what we'll implement:
-        # - Extract regions based on calibration
-        # - Use template matching to find numbers
-        # - Parse numbers and populate state
+        # --- Leer población (formato XX/YY, color white o yellow) ---
+        pop_region = self._extraer_region(screenshot, 'population')
+        if pop_region is not None and self.digit_recognizer:
+            # Intentar primero con blanco, luego con amarillo (housed)
+            actual, maximo = self.digit_recognizer.reconocer_poblacion(pop_region, color="white")
+            
+            if actual is None:
+                actual, maximo = self.digit_recognizer.reconocer_poblacion(pop_region, color="yellow")
+            
+            if actual is not None:
+                new_state.population = actual
+                new_state.max_population = maximo or self.previous_state.max_population
+            else:
+                new_state.population = self.previous_state.population
+                new_state.max_population = self.previous_state.max_population
         
-        # Placeholder: detect some dummy values for testing
+        # --- Leer recursos (color white) ---
+        for recurso in ['food', 'wood', 'gold', 'stone']:
+            region = self._extraer_region(screenshot, recurso)
+            if region is not None and self.digit_recognizer:
+                valor = self.digit_recognizer.reconocer_numero(region, color="white")
+                if valor is not None and 0 <= valor < 100000:  # Rango válido
+                    setattr(new_state, recurso, valor)
+                else:
+                    # Fallback
+                    setattr(new_state, recurso, getattr(self.previous_state, recurso))
+        
+        # Marcar estado como válido
         new_state.is_valid = True
-        new_state.villager_count = 0  # Will implement detection
-        new_state.food = 0
-        new_state.wood = 0
-        new_state.gold = 0
-        new_state.stone = 0
         new_state.update_timestamp()
         
-        # Update current state
+        # Actualizar estado actual
         self.current_state = new_state
         
-        # Emit signal for UI updates
+        # Emitir señal para la UI
         self.state_updated.emit(new_state)
     
     def get_current_state(self) -> GameState:
-        """Get the most recent game state"""
+        """
+        Retorna el estado más reciente.
+        
+        Returns:
+            GameState con datos actuales
+        """
         return self.current_state
     
     def manual_capture(self) -> GameState:
         """
-        Manually capture and return current state
-        Useful for testing without starting the loop
+        Captura manual única (sin iniciar loop).
+        Útil para testing y debugging.
+        
+        Returns:
+            GameState con datos de la captura
         """
         self._update_state()
         return self.current_state
