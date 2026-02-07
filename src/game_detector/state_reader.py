@@ -171,16 +171,13 @@ class StateReader(QObject):
     def _extraer_region(self, screenshot, nombre_region: str):
         """
         Extrae una región de la captura según calibración.
-        
-        Args:
-            screenshot: Imagen completa capturada
-            nombre_region: Nombre de la región ("villager_count", "food", etc.)
-            
-        Returns:
-            Recorte de la región o None si no hay calibración
         """
         config = self.calibration.get(nombre_region)
         if config is None:
+            return None
+        
+        # Validar que config es un diccionario
+        if not isinstance(config, dict):
             return None
         
         x = config.get("x", 0)

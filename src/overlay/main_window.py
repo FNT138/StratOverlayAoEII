@@ -84,16 +84,8 @@ class OverlayWindow(QMainWindow):
     def start_detection(self):
         """Start game state detection"""
         print("Starting game state detection...")
-        # For now, use dummy calibration
-        dummy_calibration = {
-            'villager_count': (100, 20, 50, 30),
-            'population': (200, 20, 60, 30),
-            'food': (300, 20, 60, 25),
-            'wood': (380, 20, 60, 25),
-            'gold': (460, 20, 60, 25),
-            'stone': (540, 20, 60, 25)
-        }
-        self.state_reader.load_calibration(dummy_calibration)
+        # La calibración se carga automáticamente desde config/calibration.json
+        # en el constructor de StateReader
         self.state_reader.start()
         self.game_state_widget.set_detecting_status(True)
     
