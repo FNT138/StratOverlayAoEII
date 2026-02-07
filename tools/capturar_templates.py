@@ -1,266 +1,286 @@
 """
-Herramienta interactiva para capturar templates de dígitos desde Age of Empires II DE.
+Herramienta para capturar templates de dígitos desde Age of Empires II DE.
+Versión simplificada - captura la barra superior sin escalar para máxima precisión.
 
 Uso:
-1. Abrir el juego y posicionarse en una partida donde se vean los números
-2. Ejecutar este script: python tools/capturar_templates.py
-3. Usar los controles para capturar cada dígito
-
-Controles:
-- Clic izquierdo: Seleccionar esquina inicial del recorte
-- Clic derecho: Seleccionar esquina final y mostrar preview
-- 0-9: Guardar el recorte actual como template del dígito correspondiente
-- C: Cambiar color (white -> cyan -> yellow -> white)
-- R: Refrescar captura de pantalla
-- Q: Salir
-
-El script guarda los templates en assets/digit_templates/{color}/{digito}.png
+1. Abrir el juego y posicionarse en una partida
+2. Ejecutar: python tools/capturar_templates.py
+3. Seleccionar dígitos y guardarlos
 """
 
-import cv2
-import numpy as np
-import mss
-from pathlib import Path
 import sys
+from pathlib import Path
 
-# Agregar el directorio raíz al path para importar módulos del proyecto
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+import mss
+import numpy as np
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QLabel, QWidget, QVBoxLayout,
+    QHBoxLayout, QPushButton, QComboBox, QMessageBox, QScrollArea
+)
+from PyQt6.QtCore import Qt, QRect
+from PyQt6.QtGui import QPixmap, QImage, QPainter, QPen, QColor, QKeyEvent
+import cv2
 
-class CapturadorTemplates:
-    """
-    Herramienta visual para capturar templates de dígitos.
-    Permite seleccionar regiones de la pantalla y guardarlas como templates.
-    """
+
+class ImagenCaptura(QLabel):
+    """Widget que muestra la captura y permite seleccionar región."""
     
-    # Colores disponibles para los templates
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.imagen_np = None  # Imagen original en numpy (BGR)
+        self.inicio = None
+        self.fin = None
+        self.arrastrando = False
+    
+    def set_imagen(self, img_np: np.ndarray):
+        """Establece la imagen (numpy BGR) a mostrar a escala 1:1."""
+        self.imagen_np = img_np.copy()
+        
+        # Convertir BGR -> RGB para Qt
+        rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb.shape
+        
+        # Crear QPixmap
+        qimg = QImage(rgb.data, w, h, ch * w, QImage.Format.Format_RGB888)
+        self.setPixmap(QPixmap.fromImage(qimg))
+        self.setFixedSize(w, h)
+        
+        # Limpiar selección
+        self.inicio = None
+        self.fin = None
+    
+    def get_recorte(self) -> np.ndarray:
+        """Retorna el recorte seleccionado."""
+        if self.imagen_np is None or self.inicio is None or self.fin is None:
+            return None
+        
+        x1, x2 = sorted([self.inicio.x(), self.fin.x()])
+        y1, y2 = sorted([self.inicio.y(), self.fin.y()])
+        
+        # Limitar a bordes
+        h, w = self.imagen_np.shape[:2]
+        x1, x2 = max(0, x1), min(w, x2)
+        y1, y2 = max(0, y1), min(h, y2)
+        
+        if x2 <= x1 or y2 <= y1:
+            return None
+        
+        return self.imagen_np[y1:y2, x1:x2].copy()
+    
+    def mousePressEvent(self, e):
+        if e.button() == Qt.MouseButton.LeftButton:
+            self.inicio = e.pos()
+            self.fin = e.pos()
+            self.arrastrando = True
+            self.update()
+    
+    def mouseMoveEvent(self, e):
+        if self.arrastrando:
+            self.fin = e.pos()
+            self.update()
+    
+    def mouseReleaseEvent(self, e):
+        if e.button() == Qt.MouseButton.LeftButton:
+            self.fin = e.pos()
+            self.arrastrando = False
+            self.update()
+            # Notificar
+            parent = self.parent()
+            while parent and not hasattr(parent, 'actualizar_preview'):
+                parent = parent.parent()
+            if parent:
+                parent.actualizar_preview()
+    
+    def paintEvent(self, e):
+        super().paintEvent(e)
+        if self.inicio and self.fin:
+            p = QPainter(self)
+            p.setPen(QPen(QColor(0, 255, 0), 2))
+            p.drawRect(QRect(self.inicio, self.fin))
+
+
+class VentanaCaptura(QMainWindow):
+    """Ventana principal."""
+    
     COLORES = ["white", "cyan", "yellow"]
     
     def __init__(self):
-        """Inicializa el capturador con estado inicial."""
+        super().__init__()
+        self.setWindowTitle("Capturador de Templates - Barra Superior")
+        
         self.sct = mss.mss()
-        self.monitor = self.sct.monitors[1]  # Monitor principal
+        self.monitor = self.sct.monitors[1]
         
-        # Estado de selección
-        self.punto_inicio = None
-        self.punto_fin = None
-        self.recorte_actual = None
-        
-        # Color actual para guardar templates
-        self.indice_color = 0
-        self.color_actual = self.COLORES[0]
-        
-        # Captura inicial
-        self.screenshot = self._capturar_pantalla()
-        
-        # Directorio de salida
+        self.color_actual = "white"
         self.dir_templates = PROJECT_ROOT / "assets" / "digit_templates"
         
-        # Nombre de la ventana
-        self.nombre_ventana = "Capturador de Templates - AoE II"
-        self.nombre_preview = "Preview del Recorte"
+        self._init_ui()
+        self.refrescar()
     
-    def _capturar_pantalla(self) -> np.ndarray:
-        """
-        Captura la pantalla completa.
+    def _init_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
         
-        Returns:
-            Imagen en formato BGR (OpenCV)
-        """
-        screenshot = self.sct.grab(self.monitor)
+        # Controles superiores
+        fila1 = QHBoxLayout()
+        
+        fila1.addWidget(QLabel("Color:"))
+        self.combo = QComboBox()
+        self.combo.addItems(self.COLORES)
+        self.combo.currentTextChanged.connect(lambda c: setattr(self, 'color_actual', c))
+        fila1.addWidget(self.combo)
+        
+        fila1.addSpacing(20)
+        
+        btn_ref = QPushButton("🔄 Refrescar (R)")
+        btn_ref.clicked.connect(self.refrescar)
+        fila1.addWidget(btn_ref)
+        
+        fila1.addStretch()
+        
+        self.lbl_info = QLabel("Selecciona un dígito con el mouse")
+        fila1.addWidget(self.lbl_info)
+        
+        layout.addLayout(fila1)
+        
+        # Área de imagen con scroll
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(False)
+        self.img_widget = ImagenCaptura()
+        scroll.setWidget(self.img_widget)
+        scroll.setMinimumHeight(200)
+        layout.addWidget(scroll)
+        
+        # Preview y botones
+        fila2 = QHBoxLayout()
+        
+        # Preview
+        self.lbl_preview = QLabel("Preview")
+        self.lbl_preview.setFixedSize(120, 80)
+        self.lbl_preview.setStyleSheet("background: #333; border: 1px solid #555;")
+        self.lbl_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        fila2.addWidget(self.lbl_preview)
+        
+        fila2.addSpacing(20)
+        
+        # Botones dígitos
+        fila2.addWidget(QLabel("Guardar:"))
+        for i in range(10):
+            btn = QPushButton(str(i))
+            btn.setFixedSize(35, 35)
+            btn.clicked.connect(lambda _, d=i: self.guardar(d))
+            fila2.addWidget(btn)
+        
+        fila2.addStretch()
+        
+        layout.addLayout(fila2)
+        
+        # Estado templates
+        self.lbl_estado = QLabel()
+        self.lbl_estado.setStyleSheet("color: #888; font-size: 11px;")
+        layout.addWidget(self.lbl_estado)
+        self._actualizar_estado()
+        
+        self.resize(1000, 400)
+    
+    def refrescar(self):
+        """Captura solo la barra superior (150px) a escala 1:1."""
+        region = {
+            "left": self.monitor["left"],
+            "top": self.monitor["top"],
+            "width": self.monitor["width"],
+            "height": 150  # Solo barra superior
+        }
+        screenshot = self.sct.grab(region)
         img = np.array(screenshot)
-        # Convertir BGRA a BGR
-        return cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-    
-    def _mouse_callback(self, evento, x, y, flags, param):
-        """
-        Callback para eventos del mouse.
+        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
         
-        Clic izquierdo: Define punto de inicio
-        Clic derecho: Define punto final y muestra preview
-        """
-        if evento == cv2.EVENT_LBUTTONDOWN:
-            self.punto_inicio = (x, y)
-            self.punto_fin = None
-            self.recorte_actual = None
-            print(f"Punto inicio: {x}, {y}")
-            
-        elif evento == cv2.EVENT_RBUTTONDOWN:
-            if self.punto_inicio is not None:
-                self.punto_fin = (x, y)
-                self._extraer_recorte()
-                print(f"Punto fin: {x}, {y}")
+        self.img_widget.set_imagen(img)
+        self.lbl_info.setText(f"Captura: {img.shape[1]}x{img.shape[0]} px")
     
-    def _extraer_recorte(self):
-        """
-        Extrae el recorte actual basado en los puntos seleccionados.
-        Normaliza las coordenadas para que funcione sin importar el orden de selección.
-        """
-        if self.punto_inicio is None or self.punto_fin is None:
+    def actualizar_preview(self):
+        """Muestra el recorte seleccionado."""
+        recorte = self.img_widget.get_recorte()
+        if recorte is None or recorte.size == 0:
             return
         
-        # Normalizar coordenadas (asegurar que x1 < x2 y y1 < y2)
-        x1 = min(self.punto_inicio[0], self.punto_fin[0])
-        y1 = min(self.punto_inicio[1], self.punto_fin[1])
-        x2 = max(self.punto_inicio[0], self.punto_fin[0])
-        y2 = max(self.punto_inicio[1], self.punto_fin[1])
-        
-        # Extraer región
-        self.recorte_actual = self.screenshot[y1:y2, x1:x2].copy()
-        
-        # Mostrar preview ampliado
-        if self.recorte_actual.size > 0:
-            # Escalar para mejor visualización (mínimo 100px de ancho)
-            h, w = self.recorte_actual.shape[:2]
-            escala = max(4, 100 // max(w, 1))
-            preview = cv2.resize(
-                self.recorte_actual, 
-                (w * escala, h * escala), 
-                interpolation=cv2.INTER_NEAREST
-            )
-            cv2.imshow(self.nombre_preview, preview)
+        # Ampliar para preview
+        h, w = recorte.shape[:2]
+        if w > 0 and h > 0:
+            escala = min(100 // w, 60 // h, 8)
+            escala = max(escala, 1)
+            grande = cv2.resize(recorte, (w * escala, h * escala), 
+                               interpolation=cv2.INTER_NEAREST)
+            
+            rgb = cv2.cvtColor(grande, cv2.COLOR_BGR2RGB)
+            h2, w2, ch = rgb.shape
+            qimg = QImage(rgb.data, w2, h2, ch * w2, QImage.Format.Format_RGB888)
+            self.lbl_preview.setPixmap(QPixmap.fromImage(qimg))
+            
+            self.lbl_info.setText(f"Selección: {w}x{h} px")
     
-    def _guardar_template(self, digito: int):
-        """
-        Guarda el recorte actual como template para el dígito especificado.
-        
-        Args:
-            digito: Número del 0 al 9
-        """
-        if self.recorte_actual is None:
-            print("⚠️  No hay recorte seleccionado. Usa clic izq + clic der para seleccionar.")
+    def guardar(self, digito: int):
+        """Guarda el recorte como template."""
+        recorte = self.img_widget.get_recorte()
+        if recorte is None or recorte.size == 0:
+            QMessageBox.warning(self, "Error", "Selecciona una región primero")
             return
         
-        # Crear directorio si no existe
-        dir_color = self.dir_templates / self.color_actual
-        dir_color.mkdir(parents=True, exist_ok=True)
+        path = self.dir_templates / self.color_actual
+        path.mkdir(parents=True, exist_ok=True)
         
-        # Guardar imagen
-        ruta = dir_color / f"{digito}.png"
-        cv2.imwrite(str(ruta), self.recorte_actual)
-        print(f"✅ Guardado: {ruta}")
+        archivo = path / f"{digito}.png"
+        cv2.imwrite(str(archivo), recorte)
+        
+        self.lbl_info.setText(f"✅ {self.color_actual}/{digito}.png guardado")
+        self._actualizar_estado()
     
-    def _cambiar_color(self):
-        """Cambia al siguiente color en la lista."""
-        self.indice_color = (self.indice_color + 1) % len(self.COLORES)
-        self.color_actual = self.COLORES[self.indice_color]
-        print(f"🎨 Color actual: {self.color_actual}")
-    
-    def _dibujar_interfaz(self, img: np.ndarray) -> np.ndarray:
-        """
-        Dibuja elementos de interfaz sobre la imagen.
-        
-        Args:
-            img: Imagen base
-            
-        Returns:
-            Imagen con interfaz dibujada
-        """
-        display = img.copy()
-        
-        # Dibujar rectángulo de selección si hay puntos definidos
-        if self.punto_inicio is not None:
-            cv2.circle(display, self.punto_inicio, 5, (0, 255, 0), -1)
-            
-            if self.punto_fin is not None:
-                cv2.rectangle(display, self.punto_inicio, self.punto_fin, (0, 255, 0), 2)
-        
-        # Mostrar información en la esquina
-        info = [
-            f"Color: {self.color_actual}",
-            "Controles:",
-            "  Clic izq: Punto inicio",
-            "  Clic der: Punto fin",
-            "  0-9: Guardar digito",
-            "  C: Cambiar color",
-            "  R: Refrescar",
-            "  Q: Salir"
-        ]
-        
-        y = 30
-        for linea in info:
-            cv2.putText(display, linea, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 
-                       0.6, (0, 255, 0), 2)
-            y += 25
-        
-        return display
-    
-    def ejecutar(self):
-        """
-        Ejecuta el bucle principal de la herramienta.
-        """
-        print("=" * 50)
-        print("  Capturador de Templates de Dígitos")
-        print("  Para Age of Empires II: Definitive Edition")
-        print("=" * 50)
-        print(f"\nTemplates se guardarán en: {self.dir_templates}")
-        print(f"Color inicial: {self.color_actual}")
-        print("\nAbre el juego y posiciónate donde se vean los números.")
-        print("Presiona R para refrescar la captura.\n")
-        
-        # Crear ventana y configurar callback del mouse
-        cv2.namedWindow(self.nombre_ventana, cv2.WINDOW_NORMAL)
-        cv2.setMouseCallback(self.nombre_ventana, self._mouse_callback)
-        
-        # Redimensionar ventana para que quepa en pantalla
-        cv2.resizeWindow(self.nombre_ventana, 1280, 720)
-        
-        while True:
-            # Dibujar interfaz
-            display = self._dibujar_interfaz(self.screenshot)
-            cv2.imshow(self.nombre_ventana, display)
-            
-            # Procesar teclas
-            key = cv2.waitKey(1) & 0xFF
-            
-            # Q para salir
-            if key == ord('q') or key == ord('Q'):
-                break
-            
-            # R para refrescar captura
-            elif key == ord('r') or key == ord('R'):
-                self.screenshot = self._capturar_pantalla()
-                print("🔄 Captura refrescada")
-            
-            # C para cambiar color
-            elif key == ord('c') or key == ord('C'):
-                self._cambiar_color()
-            
-            # 0-9 para guardar dígitos
-            elif ord('0') <= key <= ord('9'):
-                digito = key - ord('0')
-                self._guardar_template(digito)
-        
-        # Limpiar
-        cv2.destroyAllWindows()
-        print("\n¡Captura finalizada!")
-        
-        # Mostrar resumen de templates guardados
-        self._mostrar_resumen()
-    
-    def _mostrar_resumen(self):
-        """Muestra un resumen de los templates guardados."""
-        print("\n📊 Resumen de templates:")
-        
+    def _actualizar_estado(self):
+        lineas = []
         for color in self.COLORES:
-            dir_color = self.dir_templates / color
-            if dir_color.exists():
-                templates = list(dir_color.glob("*.png"))
-                digitos = [t.stem for t in templates]
-                if digitos:
-                    print(f"  {color}: {', '.join(sorted(digitos))}")
-                else:
-                    print(f"  {color}: (vacío)")
+            d = self.dir_templates / color
+            if d.exists():
+                nums = sorted([f.stem for f in d.glob("*.png")])
+                lineas.append(f"{color}: {', '.join(nums) if nums else '(vacío)'}")
             else:
-                print(f"  {color}: (no existe)")
+                lineas.append(f"{color}: (vacío)")
+        self.lbl_estado.setText("  |  ".join(lineas))
+    
+    def keyPressEvent(self, e: QKeyEvent):
+        k = e.key()
+        if k in (Qt.Key.Key_Q, Qt.Key.Key_Escape):
+            self.close()
+        elif k == Qt.Key.Key_R:
+            self.refrescar()
+        elif k == Qt.Key.Key_C:
+            idx = (self.COLORES.index(self.color_actual) + 1) % 3
+            self.combo.setCurrentIndex(idx)
+        elif Qt.Key.Key_0 <= k <= Qt.Key.Key_9:
+            self.guardar(k - Qt.Key.Key_0)
 
 
 def main():
-    """Punto de entrada principal."""
-    capturador = CapturadorTemplates()
-    capturador.ejecutar()
+    print("Iniciando capturador de templates...")
+    print(f"Templates en: {PROJECT_ROOT / 'assets' / 'digit_templates'}\n")
+    
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    app.setStyleSheet("""
+        QMainWindow, QWidget { background: #2b2b2b; color: #fff; }
+        QPushButton { background: #3c3c3c; border: 1px solid #555; 
+                      border-radius: 3px; padding: 5px; }
+        QPushButton:hover { background: #4a4a4a; }
+        QComboBox { background: #3c3c3c; border: 1px solid #555; padding: 3px; }
+    """)
+    
+    v = VentanaCaptura()
+    v.show()
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

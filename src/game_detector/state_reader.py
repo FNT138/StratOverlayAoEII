@@ -194,9 +194,8 @@ class StateReader(QObject):
     def _update_state(self):
         """
         Captura pantalla y actualiza el estado del juego.
-        
-        Lee cada región de UI, reconoce los números, y actualiza GameState.
-        Si el reconocimiento falla, mantiene el valor anterior (fallback).
+        Lee cada region de UI y reconoce los numeros.
+        Si falla, mantiene el valor anterior (fallback).
         """
         # Capturar barra superior de la pantalla
         screenshot = self.capture.capture_top_bar(height=150)
@@ -207,25 +206,19 @@ class StateReader(QObject):
         # Crear nuevo estado
         new_state = GameState()
         
-        # --- Leer contador de villagers (color cyan) ---
+        # --- Leer contador de villagers ---
         villager_region = self._extraer_region(screenshot, 'villager_count')
         if villager_region is not None and self.digit_recognizer:
-            valor = self.digit_recognizer.reconocer_numero(villager_region, color="cyan")
-            if valor is not None and 0 < valor < 200:  # Validación de rango
+            valor = self.digit_recognizer.reconocer_numero(villager_region)
+            if valor is not None and 0 < valor < 200:
                 new_state.villager_count = valor
             else:
-                # Fallback: mantener valor anterior
                 new_state.villager_count = self.previous_state.villager_count
         
-        # --- Leer población (formato XX/YY, color white o yellow) ---
+        # --- Leer poblacion (formato XX/YY) ---
         pop_region = self._extraer_region(screenshot, 'population')
         if pop_region is not None and self.digit_recognizer:
-            # Intentar primero con blanco, luego con amarillo (housed)
-            actual, maximo = self.digit_recognizer.reconocer_poblacion(pop_region, color="white")
-            
-            if actual is None:
-                actual, maximo = self.digit_recognizer.reconocer_poblacion(pop_region, color="yellow")
-            
+            actual, maximo = self.digit_recognizer.reconocer_poblacion(pop_region)
             if actual is not None:
                 new_state.population = actual
                 new_state.max_population = maximo or self.previous_state.max_population
@@ -233,25 +226,24 @@ class StateReader(QObject):
                 new_state.population = self.previous_state.population
                 new_state.max_population = self.previous_state.max_population
         
-        # --- Leer recursos (color white) ---
+        # --- Leer recursos ---
         for recurso in ['food', 'wood', 'gold', 'stone']:
             region = self._extraer_region(screenshot, recurso)
             if region is not None and self.digit_recognizer:
-                valor = self.digit_recognizer.reconocer_numero(region, color="white")
-                if valor is not None and 0 <= valor < 100000:  # Rango válido
+                valor = self.digit_recognizer.reconocer_numero(region)
+                if valor is not None and 0 <= valor < 100000:
                     setattr(new_state, recurso, valor)
                 else:
-                    # Fallback
                     setattr(new_state, recurso, getattr(self.previous_state, recurso))
         
-        # Marcar estado como válido
+        # Marcar estado como valido
         new_state.is_valid = True
         new_state.update_timestamp()
         
         # Actualizar estado actual
         self.current_state = new_state
         
-        # Emitir señal para la UI
+        # Emitir senal para la UI
         self.state_updated.emit(new_state)
     
     def get_current_state(self) -> GameState:

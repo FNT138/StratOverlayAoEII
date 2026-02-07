@@ -3,9 +3,9 @@
     "ui_positions": {
         "villager_count": {
             "x": 420,
-            "y": 22,
+            "y": 25,
             "width": 26,
-            "height": 26
+            "height": 25
         },
         "population": {
             "x": 448,

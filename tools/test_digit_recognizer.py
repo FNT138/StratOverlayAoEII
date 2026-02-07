@@ -1,17 +1,12 @@
 """
-Script de prueba para el reconocedor de dígitos.
-
-Uso:
-1. Primero capturar templates con: python tools/capturar_templates.py
-2. Luego ejecutar este test: python tools/test_digit_recognizer.py
-
-El script captura la pantalla y muestra qué números detecta en cada región.
+Script de prueba para el reconocedor de digitos.
+Captura pantalla y prueba el reconocimiento en cada region.
 """
 
 import sys
 from pathlib import Path
+import time
 
-# Agregar directorio raíz al path
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -23,89 +18,69 @@ from src.game_detector import ScreenCapture, DigitRecognizer
 
 def main():
     print("=" * 50)
-    print("  Test de Reconocedor de Dígitos")
+    print("  Test de Reconocedor de Digitos")
     print("=" * 50)
     
-    # Verificar que existan templates
     templates_dir = PROJECT_ROOT / "assets" / "digit_templates"
-    if not templates_dir.exists():
-        print(f"\n❌ No se encontró {templates_dir}")
-        print("   Ejecutar primero: python tools/capturar_templates.py")
-        return
-    
-    # Cargar calibración
     config_path = PROJECT_ROOT / "config" / "calibration.json"
-    if not config_path.exists():
-        print(f"\n❌ No se encontró {config_path}")
-        return
     
     with open(config_path, 'r') as f:
         config = json.load(f)
-    
     calibration = config.get("ui_positions", {})
-    print(f"\n📍 Calibración cargada para {config.get('resolution', 'desconocida')}")
     
-    # Inicializar componentes
-    print("\n🔧 Inicializando...")
+    print(f"\nCalibracion: {config.get('resolution', '?')}")
+    
+    # Crear reconocedor
+    recognizer = DigitRecognizer(str(templates_dir), confianza_minima=0.6)
+    
+    print(f"Templates: {recognizer.templates_disponibles()}")
+    
     capture = ScreenCapture(fps_limit=5)
-    recognizer = DigitRecognizer(str(templates_dir), confianza_minima=0.7)
     
-    # Mostrar templates cargados
-    print("\n📦 Templates disponibles:")
-    for color in ["white", "cyan", "yellow"]:
-        digitos = recognizer.templates_disponibles(color)
-        if digitos:
-            print(f"   {color}: {digitos}")
-        else:
-            print(f"   {color}: (ninguno)")
+    # Delay para cambiar al juego
+    print("\n*** CAMBIA A LA VENTANA DEL JUEGO ***")
+    for i in range(5, 0, -1):
+        print(f"  Capturando en {i}...", end="\r")
+        time.sleep(1)
+    print("\nCapturando...          ")
     
-    # Capturar pantalla
-    print("\n📸 Capturando pantalla...")
     screenshot = capture.capture_top_bar(height=150)
     
-    # Probar reconocimiento en cada región
-    print("\n🔍 Resultados de reconocimiento:")
+    debug_dir = PROJECT_ROOT / "debug"
+    debug_dir.mkdir(exist_ok=True)
+    
+    print("\nResultados:")
     print("-" * 40)
     
-    regiones = [
-        ("villager_count", "cyan"),
-        ("population", "white"),
-        ("food", "white"),
-        ("wood", "white"),
-        ("gold", "white"),
-        ("stone", "white"),
-    ]
+    regiones = ["villager_count", "population", "food", "wood", "gold", "stone"]
     
-    for nombre, color in regiones:
+    for nombre in regiones:
         if nombre not in calibration:
-            print(f"   {nombre}: sin calibración")
+            print(f"  {nombre:16}: sin calibracion")
             continue
         
         cfg = calibration[nombre]
         x, y = cfg["x"], cfg["y"]
         w, h = cfg["width"], cfg["height"]
         
-        # Extraer región
         region = screenshot[y:y+h, x:x+w]
+        cv2.imwrite(str(debug_dir / f"region_{nombre}.png"), region)
         
-        # Reconocer
         if nombre == "population":
-            resultado = recognizer.reconocer_poblacion(region, color=color)
-            display = f"{resultado[0]}/{resultado[1]}" if resultado[0] else "---"
+            actual, maximo = recognizer.reconocer_poblacion(region)
+            if actual is not None:
+                print(f"  {nombre:16}: {actual}/{maximo}")
+            else:
+                print(f"  {nombre:16}: ---")
         else:
-            resultado = recognizer.reconocer_numero(region, color=color)
-            display = str(resultado) if resultado is not None else "---"
-        
-        print(f"   {nombre:16}: {display}")
-        
-        # Guardar región para debug
-        debug_path = PROJECT_ROOT / "debug" / f"region_{nombre}.png"
-        debug_path.parent.mkdir(exist_ok=True)
-        cv2.imwrite(str(debug_path), region)
+            resultado = recognizer.reconocer_numero(region)
+            if resultado is not None:
+                print(f"  {nombre:16}: {resultado}")
+            else:
+                print(f"  {nombre:16}: ---")
     
     print("-" * 40)
-    print(f"\n💾 Regiones guardadas en: {PROJECT_ROOT / 'debug'}")
-    print("\n✅ Test completado")
+    print(f"\nRegiones en: {debug_dir}")
 
 
 if __name__ == "__main__":
