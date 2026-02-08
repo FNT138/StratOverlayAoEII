@@ -233,6 +233,18 @@ class StateReader(QObject):
                 else:
                     setattr(new_state, recurso, getattr(self.previous_state, recurso))
         
+        # --- Leer aldeanos por recurso ---
+        for recurso in ['food', 'wood', 'gold', 'stone']:
+            region_name = f"{recurso}_villagers"
+            region = self._extraer_region(screenshot, region_name)
+            if region is not None and self.digit_recognizer:
+                valor = self.digit_recognizer.reconocer_numero(region)
+                if valor is not None and 0 <= valor < 200:
+                    setattr(new_state, region_name, valor)
+                else:
+                    setattr(new_state, region_name, 
+                            getattr(self.previous_state, region_name))
+        
         # Marcar estado como valido
         new_state.is_valid = True
         new_state.update_timestamp()

@@ -36,6 +36,34 @@
             "y": 14,
             "width": 65,
             "height": 29
+        },
+        "food_villagers": {
+            "x": 144,
+            "y": 40,
+            "width": 30,
+            "height": 20,
+            "comment": "Aldeanos en comida - CALIBRAR"
+        },
+        "wood_villagers": {
+            "x": 43,
+            "y": 40,
+            "width": 30,
+            "height": 20,
+            "comment": "Aldeanos en madera - CALIBRAR"
+        },
+        "gold_villagers": {
+            "x": 242,
+            "y": 40,
+            "width": 30,
+            "height": 20,
+            "comment": "Aldeanos en oro - CALIBRAR"
+        },
+        "stone_villagers": {
+            "x": 345,
+            "y": 40,
+            "width": 30,
+            "height": 20,
+            "comment": "Aldeanos en piedra - CALIBRAR"
         }
     }
 }
