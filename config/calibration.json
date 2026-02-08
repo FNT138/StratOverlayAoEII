@@ -2,68 +2,64 @@
     "resolution": "1920x1080",
     "ui_positions": {
         "villager_count": {
-            "x": 420,
-            "y": 25,
-            "width": 26,
-            "height": 25
+            "x": 414,
+            "y": 29,
+            "width": 32,
+            "height": 20
         },
         "population": {
-            "x": 448,
-            "y": 10,
-            "width": 72,
-            "height": 30
+            "x": 450,
+            "y": 17,
+            "width": 75,
+            "height": 23
         },
         "food": {
-            "x": 144,
+            "x": 150,
             "y": 14,
-            "width": 62,
+            "width": 56,
             "height": 26
         },
         "wood": {
-            "x": 43,
-            "y": 14,
-            "width": 62,
-            "height": 26
+            "x": 48,
+            "y": 18,
+            "width": 54,
+            "height": 20
         },
         "gold": {
-            "x": 242,
-            "y": 12,
-            "width": 62,
-            "height": 31
+            "x": 249,
+            "y": 15,
+            "width": 55,
+            "height": 25
         },
         "stone": {
-            "x": 345,
-            "y": 14,
-            "width": 65,
-            "height": 29
+            "x": 350,
+            "y": 17,
+            "width": 55,
+            "height": 23
         },
         "food_villagers": {
-            "x": 144,
-            "y": 40,
-            "width": 30,
-            "height": 20,
-            "comment": "Aldeanos en comida - CALIBRAR"
+            "x": 111,
+            "y": 30,
+            "width": 36,
+            "height": 18
         },
         "wood_villagers": {
-            "x": 43,
-            "y": 40,
-            "width": 30,
-            "height": 20,
-            "comment": "Aldeanos en madera - CALIBRAR"
+            "x": 8,
+            "y": 30,
+            "width": 37,
+            "height": 17
         },
         "gold_villagers": {
-            "x": 242,
-            "y": 40,
-            "width": 30,
-            "height": 20,
-            "comment": "Aldeanos en oro - CALIBRAR"
+            "x": 211,
+            "y": 27,
+            "width": 35,
+            "height": 21
         },
         "stone_villagers": {
-            "x": 345,
-            "y": 40,
-            "width": 30,
-            "height": 20,
-            "comment": "Aldeanos en piedra - CALIBRAR"
+            "x": 314,
+            "y": 29,
+            "width": 34,
+            "height": 18
         }
     }
 }

@@ -32,8 +32,8 @@ class GameStateWidget(QFrame):
         
         # Population row
         pop_layout = QHBoxLayout()
-        self.vill_label = QLabel("👤 Villagers: --")
-        self.vill_label.setFont(QFont("Segoe UI", 9))
+        self.vill_label = QLabel("👤 Vills: --")
+        self.vill_label.setFont(QFont("Segoe UI", 9, QFont.Weight.Bold))
         self.pop_label = QLabel("Pop: --/--")
         self.pop_label.setFont(QFont("Segoe UI", 9))
         pop_layout.addWidget(self.vill_label)
@@ -41,24 +41,49 @@ class GameStateWidget(QFrame):
         pop_layout.addWidget(self.pop_label)
         layout.addLayout(pop_layout)
         
-        # Resources
-        self.food_label = QLabel("🌾 Food: --")
-        self.food_label.setFont(QFont("Segoe UI", 9))
-        layout.addWidget(self.food_label)
+        # Separator
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setFrameShadow(QFrame.Shadow.Sunken)
+        line.setStyleSheet("background-color: #555;")
+        layout.addWidget(line)
         
-        self.wood_label = QLabel("🪵 Wood: --")
-        self.wood_label.setFont(QFont("Segoe UI", 9))
-        layout.addWidget(self.wood_label)
+        # Resources Grid (Label | Amount | Income | Vills)
+        self.res_labels = {}
         
-        self.gold_label = QLabel("🪙 Gold: --")
-        self.gold_label.setFont(QFont("Segoe UI", 9))
-        layout.addWidget(self.gold_label)
-        
-        self.stone_label = QLabel("🪨 Stone: --")
-        self.stone_label.setFont(QFont("Segoe UI", 9))
-        layout.addWidget(self.stone_label)
+        for res, icon, color in [
+            ('food', '🌾', '#FF9800'), 
+            ('wood', '🪵', '#795548'),
+            ('gold', '🪙', '#FFC107'),
+            ('stone', '🪨', '#9E9E9E')
+        ]:
+            row = QHBoxLayout()
+            row.setSpacing(5)
+            
+            # Icon & Name
+            lbl_name = QLabel(f"{icon}")
+            lbl_name.setFixedWidth(20)
+            
+            # Amount & Income
+            lbl_data = QLabel("-- (+0/m)")
+            lbl_data.setFont(QFont("Segoe UI", 9))
+            lbl_data.setStyleSheet(f"color: {color};")
+            
+            # Villagers count
+            lbl_vills = QLabel("0 👤")
+            lbl_vills.setFont(QFont("Segoe UI", 9))
+            lbl_vills.setAlignment(Qt.AlignmentFlag.AlignRight)
+            lbl_vills.setFixedWidth(40)
+            
+            row.addWidget(lbl_name)
+            row.addWidget(lbl_data, stretch=1)
+            row.addWidget(lbl_vills)
+            layout.addLayout(row)
+            
+            self.res_labels[res] = {'data': lbl_data, 'vills': lbl_vills}
         
         # Age
+        layout.addSpacing(5)
         self.age_label = QLabel("🏛️ Age: Dark Age")
         self.age_label.setFont(QFont("Segoe UI", 9))
         layout.addWidget(self.age_label)
@@ -72,7 +97,7 @@ class GameStateWidget(QFrame):
         # Styling
         self.setStyleSheet("""
             GameStateWidget {
-                background-color: rgba(40, 40, 50, 0.9);
+                background-color: rgba(30, 30, 40, 0.95);
                 border: 1px solid #555;
                 border-radius: 5px;
             }
@@ -90,14 +115,29 @@ class GameStateWidget(QFrame):
             self.status_label.setStyleSheet("color: #FF9800;")
             return
         
-        # Update all labels
-        self.vill_label.setText(f"👤 Villagers: {state.villager_count}")
+        # Update header
+        self.vill_label.setText(f"👤 Vills: {state.villager_count}")
         self.pop_label.setText(f"Pop: {state.population}/{state.max_population}")
-        self.food_label.setText(f"🌾 Food: {state.food}")
-        self.wood_label.setText(f"🪵 Wood: {state.wood}")
-        self.gold_label.setText(f"🪙 Gold: {state.gold}")
-        self.stone_label.setText(f"🪨 Stone: {state.stone}")
         self.age_label.setText(f"🏛️ Age: {state.age} Age")
+        
+        # Update resources
+        income = state.get_income_per_minute()
+        
+        # Food
+        self.res_labels['food']['data'].setText(f"{state.food} (+{int(income['food'])}/m)")
+        self.res_labels['food']['vills'].setText(f"{state.food_villagers} 👤")
+        
+        # Wood
+        self.res_labels['wood']['data'].setText(f"{state.wood} (+{int(income['wood'])}/m)")
+        self.res_labels['wood']['vills'].setText(f"{state.wood_villagers} 👤")
+        
+        # Gold
+        self.res_labels['gold']['data'].setText(f"{state.gold} (+{int(income['gold'])}/m)")
+        self.res_labels['gold']['vills'].setText(f"{state.gold_villagers} 👤")
+        
+        # Stone
+        self.res_labels['stone']['data'].setText(f"{state.stone} (+{int(income['stone'])}/m)")
+        self.res_labels['stone']['vills'].setText(f"{state.stone_villagers} 👤")
         
         self.status_label.setText("🟢 Detecting")
         self.status_label.setStyleSheet("color: #4CAF50;")

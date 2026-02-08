@@ -52,7 +52,11 @@ def main():
     print("\nResultados:")
     print("-" * 40)
     
-    regiones = ["villager_count", "population", "food", "wood", "gold", "stone"]
+    regiones = [
+        "villager_count", "population", 
+        "food", "wood", "gold", "stone",
+        "food_villagers", "wood_villagers", "gold_villagers", "stone_villagers"
+    ]
     
     for nombre in regiones:
         if nombre not in calibration:
