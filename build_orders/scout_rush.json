@@ -1,135 +1,187 @@
 {
-  "name": "Scout Rush - Feudal Age",
-  "description": "Build order estándar para rush de scouts en edad feudal. Versátil para la mayoría de civilizaciones.",
+  "name": "Scout Rush (21 Pop)",
+  "description": "Apertura estándar agresiva con caballería ligera. Objetivo: Feudal rápida y presión temprana.",
   "civilization": "any",
-  "author": "Community Standard",
+  "author": "Standard Meta 2024",
   "target_age": "Feudal",
-  "max_villagers": 21,
   "strategy": "Scout Rush",
   "steps": [
     {
-      "villager_count": 1,
-      "action": "assign_resource",
-      "resource": "sheep",
-      "count": 3,
-      "description": "3 aldeanos a ovejas"
+      "villager_count": 3,
+      "action": "train_villager",
+      "count": 1,
+      "description": "Comenzar producción de aldeanos (nunca detener TC)",
+      "notes": "Hacer HQQQQ (Seleccionar TC + Cola de aldeanos)"
     },
     {
-      "villager_count": 4,
+      "villager_count": 3,
       "action": "build",
       "building": "House",
-      "description": "Construir casa",
+      "count": 2,
+      "description": "Construir 2 casas con aldeanos iniciales",
       "important": true
     },
     {
       "villager_count": 4,
       "action": "assign_resource",
       "resource": "sheep",
-      "count": 2,
-      "description": "2 aldeanos más a ovejas"
+      "count": 6,
+      "description": "Enviar nuevos aldeanos a ovejas (hasta tener 6)",
+      "notes": "Mantener 6 en ovejas bajo el TC"
     },
     {
-      "villager_count": 6,
+      "villager_count": 7,
       "action": "build",
       "building": "Lumber Camp",
-      "description": "Construir campamento maderero",
+      "description": "Aldeano 7 construye Campamento Maderero",
       "important": true
     },
     {
-      "villager_count": 6,
+      "villager_count": 8,
       "action": "assign_resource",
       "resource": "wood",
       "count": 3,
-      "description": "3 aldeanos a madera"
-    },
-    {
-      "villager_count": 9,
-      "action": "lure_boar",
-      "description": "Atraer primer jabalí",
-      "notes": "Usar un aldeano de ovejas",
-      "important": true
+      "description": "Enviar siguientes 3 aldeanos a madera (total 3)",
+      "notes": "Total: 6 Ovejas, 3 Madera"
     },
     {
       "villager_count": 10,
-      "action": "assign_resource",
-      "resource": "boar",
-      "count": 4,
-      "description": "4 aldeanos al jabalí"
+      "action": "lure_boar",
+      "description": "Aldeano 11 atrae el PRIMER JABALÍ",
+      "important": true,
+      "notes": "Desarrollar Loom si es necesario (civs débiles o lag)"
     },
     {
       "villager_count": 11,
       "action": "build",
       "building": "House",
-      "description": "Construir casa"
+      "description": "Aldeano 12 construye casa -> luego Molino",
+      "notes": "Cerca de las bayas"
     },
     {
-      "villager_count": 11,
+      "villager_count": 12,
+      "action": "build",
+      "building": "Mill",
+      "description": "Aldeano 12 construye Molino en bayas",
+      "important": true
+    },
+    {
+      "villager_count": 13,
       "action": "assign_resource",
       "resource": "berries",
-      "count": 4,
-      "description": "4 aldeanos a bayas (construir molino)",
-      "notes": "Construir Mill cerca de bayas"
+      "count": 1,
+      "description": "Enviar aldeano a bayas",
+      "notes": "Total: 4 Bayas (eventualmente)"
     },
     {
-      "villager_count": 15,
+      "villager_count": 14,
       "action": "lure_boar",
-      "description": "Atraer segundo jabalí",
+      "description": "Atraer SEGUNDO JABALÍ (usar aldeano de comida)",
       "important": true
+    },
+    {
+      "villager_count": 14,
+      "action": "assign_resource",
+      "resource": "berries",
+      "count": 2,
+      "description": "Siguientes 2 aldeanos a bayas (total 3)",
+      "notes": "Total: 3 en Madera, 3 en Bayas, resto en Jabalí/Ovejas"
     },
     {
       "villager_count": 16,
       "action": "assign_resource",
-      "resource": "wood",
-      "count": 2,
-      "description": "2 aldeanos más a madera"
+      "resource": "boar",
+      "count": 1,
+      "description": "Aldeano 17 a comida bajo TC (Jabalí)",
+      "notes": "O crear una granja si sobra madera (raro)"
+    },
+    {
+      "villager_count": 17,
+      "action": "assign_resource",
+      "resource": "boar",
+      "count": 1,
+      "description": "Aldeano 18 a comida bajo TC"
     },
     {
       "villager_count": 18,
       "action": "build",
       "building": "House",
-      "description": "Construir casa"
+      "description": "Aldeano 19 construye casa",
+      "important": false
     },
     {
       "villager_count": 19,
       "action": "assign_resource",
-      "resource": "food",
-      "count": 2,
-      "description": "2 aldeanos a comida (ovejas restantes)"
+      "resource": "wood",
+      "count": 1,
+      "description": "Aldeano 19 a madera (Primer maderero)",
+      "notes": "Puede ser necesario un segundo campamento si está lejos"
+    },
+    {
+      "villager_count": 20,
+      "action": "assign_resource",
+      "resource": "wood",
+      "count": 1,
+      "description": "Aldeano 20 a madera",
+      "notes": "Preparar subida: 500 Comida"
+    },
+    {
+      "villager_count": 21,
+      "action": "research",
+      "tech": "Loom",
+      "description": "Investigar Telar (Loom) en el TC",
+      "important": true
     },
     {
       "villager_count": 21,
       "action": "advance_age",
-      "description": "SUBIR A FEUDAL",
-      "notes": "6 en madera, 10 en comida, 5 construyendo/idle",
+      "description": "SUBIR A FEUDAL (Click Up)",
+      "notes": "Deberías tener 21 de pop (20 vills + 1 scout)",
       "important": true
     },
     {
       "villager_count": 21,
       "action": "build",
       "building": "Barracks",
-      "description": "Durante subida: construir cuartel",
-      "notes": "Mientras subes de edad"
+      "description": "MIENTRAS SUBES: Construir Cuartel con aldeano de madera",
+      "important": true,
+      "notes": "Indispensable para el Establo"
     },
     {
-      "villager_count": 22,
+      "villager_count": 21,
       "action": "assign_resource",
       "resource": "wood",
-      "count": 2,
-      "description": "2 aldeanos más a madera (total 8)"
+      "description": "Reasignar: 10 Madera (5+5), 10 Comida (4 Bayas, 6 Ovejas/Granjas)",
+      "notes": "Balancear economía para Feudal"
     },
     {
-      "villager_count": 24,
+      "villager_count": 21,
       "action": "build",
       "building": "Stable",
-      "description": "AL LLEGAR FEUDAL: Stable + Blacksmith",
+      "description": "AL LLEGAR FEUDAL: Construir Establo inmediatamente",
       "important": true
     },
     {
-      "villager_count": 24,
+      "villager_count": 21,
+      "action": "research",
+      "tech": "Double-Bit Axe",
+      "description": "Investigar Hacha de Doble Filo (Maderero)",
+      "important": true
+    },
+    {
+      "villager_count": 21,
+      "action": "research",
+      "tech": "Horse Collar",
+      "description": "Investigar Collera (Molino) - Opcional si faltan recursos",
+      "important": false
+    },
+    {
+      "villager_count": 21,
       "action": "train",
       "unit": "Scout",
       "count": 3,
-      "description": "Producir 3-4 scouts continuamente"
+      "description": "Producir Scouts continuamente (mínimo 3)",
+      "important": true
     }
   ]
 }
